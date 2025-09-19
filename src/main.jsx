@@ -1,0 +1,14 @@
+import './index.css';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+// use react-router-dom in web apps
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import App from './App';
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
