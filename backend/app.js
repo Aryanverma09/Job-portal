@@ -7,17 +7,21 @@ import cors from 'cors'
 
 
 const app = express()
-connectdb(process.env.MONGO_URL);  
+connectdb(process.env.MONGO_URL || 'mongodb://localhost:27017/jobportal');  
 
 app.use(cors())
 app.use(express.json())
 app.use('/api/users',UserRoutes)
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'))
+
 app.get('/',(req,res)=>{
     res.send("Hello")
 })
 
-app.listen(process.env.PORT,()=>{
-    console.log("server is running")
+const PORT = process.env.PORT || 5000
+app.listen(PORT,()=>{
+    console.log(`server is running on port ${PORT}`)
 })
 

@@ -7,7 +7,7 @@ import Jobs from './pages/Jobs'
 import JobDetail from './pages/JobDetail'
 import Companies from './pages/Companies'
 import CompanyDetail from './pages/CompanyDetail'
-import About from './pages/About'
+import Profile from './pages/Profile'
 
 const App = () => {
   return (
@@ -19,7 +19,7 @@ const App = () => {
       <Route path="/jobs/:id" element={<JobDetail/>} />
       <Route path="/companies" element={<Companies/>} />
       <Route path="/companies/:id" element={<CompanyDetail/>} />
-      <Route path="/about" element={<About/>} />
+      <Route path="/profile" element={<Profile/>} />
     </Routes>
   )
 }

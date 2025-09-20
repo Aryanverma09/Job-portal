@@ -43,7 +43,7 @@ const Navbar = () => {
             </NavigationMenuItem>
             <NavigationMenuItem>
               <NavigationMenuLink asChild className="hover:text-indigo-600 transition">
-                <button onClick={() => navigate('/about')} className="hover:text-indigo-600 transition">About</button>
+                <button onClick={() => navigate('/profile')} className="hover:text-indigo-600 transition">Profile</button>
               </NavigationMenuLink>
             </NavigationMenuItem>
           </NavigationMenuList>

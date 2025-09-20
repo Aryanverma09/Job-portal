@@ -12,6 +12,21 @@ const userSchema = new mongoose.Schema({
     password:{
         type : String,
         required : true
+    },
+    resume: {
+        originalName: String,
+        fileName: String,
+        filePath: String,
+        uploadedAt: {
+            type: Date,
+            default: Date.now
+        },
+        parsedData: {
+            skills: [String],
+            experience: [String],
+            education: [String],
+            summary: String
+        }
     }
 })
 
