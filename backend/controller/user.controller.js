@@ -72,10 +72,10 @@ export const UserRegister =async (req,res)=>{
         await newUser.save()
 
         // create token
-        const token = jwt.sign({ id: newUser._id, email: newUser.email, name: newUser.name }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' })
+        const token = jwt.sign({ id: newUser._id, email: newUser.email, name: newUser.name, role: newUser.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' })
 
         // return user (without password) and token
-        const userSafe = { id: newUser._id, name: newUser.name, email: newUser.email }
+        const userSafe = { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role }
         return res.status(201).json({ message: "User Registered", user: userSafe, token })
     }catch(err){
         console.error(err)
@@ -101,9 +101,9 @@ export const UserLogin = async(req,res)=>{
         }
 
         // create token
-        const token = jwt.sign({ id: user._id, email: user.email, name: user.name }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' })
+        const token = jwt.sign({ id: user._id, email: user.email, name: user.name, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' })
 
-        const userSafe = { id: user._id, name: user.name, email: user.email }
+        const userSafe = { id: user._id, name: user.name, email: user.email, role: user.role }
         return res.status(200).json({ message: "User Login", user: userSafe, token })
     } catch(err){
         console.error(err)

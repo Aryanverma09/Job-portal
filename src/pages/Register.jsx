@@ -17,7 +17,7 @@ function RegisterForm() {
     setLoading(true);
     setMessage('');
     try {
-      const res = await axios.post('http://localhost:3000/api/users/register', form);
+      const res = await axios.post('/api/users/register', form);
       const { token, user } = res.data;
       if (!token) {
         setMessage('Registration succeeded but no token returned');
@@ -26,7 +26,11 @@ function RegisterForm() {
       localStorage.setItem('token', token);
       if (user) localStorage.setItem('user', JSON.stringify(user));
       setMessage(res.data.message || 'Registered');
-      navigate('/main');
+      if (user?.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/main');
+      }
     } catch (err) {
       setMessage('Error: ' + (err.response?.data?.message || err.message));
     } finally {

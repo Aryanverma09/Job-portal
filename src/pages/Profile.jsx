@@ -58,7 +58,7 @@ const Profile = () => {
     formData.append('userId', user.id)
 
     try {
-      const response = await fetch('http://localhost:3000/api/users/upload-resume', {
+      const response = await fetch('/api/users/upload-resume', {
         method: 'POST',
         body: formData,
         headers: {
@@ -87,7 +87,7 @@ const Profile = () => {
   const getJobMatches = async (resumeData) => {
     setLoading(true)
     try {
-      const response = await fetch('http://localhost:3000/api/users/get-matched-jobs', {
+      const response = await fetch('/api/users/get-matched-jobs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ const Profile = () => {
 
   const downloadResume = () => {
     if (resume && resume.filePath) {
-      window.open(`http://localhost:3000/${resume.filePath}`, '_blank')
+      window.open(`${resume.filePath.startsWith('/uploads') ? '' : '/uploads/'}${resume.filePath.replace(/^\\?/,'')}`, '_blank')
     }
   }
 

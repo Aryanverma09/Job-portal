@@ -15,7 +15,7 @@ function LoginPage() {
     setLoading(true);
     setMessage('');
     try {
-      const res = await axios.post('http://localhost:3000/api/users/login', form);
+      const res = await axios.post('/api/users/login', form);
       const { token, user } = res.data;
       if (!token) {
         setMessage('Login failed: no token received');
@@ -25,8 +25,12 @@ function LoginPage() {
       localStorage.setItem('token', token);
       if (user) localStorage.setItem('user', JSON.stringify(user));
       setMessage(res.data.message || 'Login successful');
-      // redirect to main page
-      navigate('/main');
+      // redirect based on role
+      if (user?.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/main');
+      }
     } catch (err) {
       setMessage('Error: ' + (err.response?.data?.message || err.message));
     } finally {
@@ -37,8 +41,8 @@ function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
-        <h2 className="text-3xl font-bold mb-2 text-gray-900">Welcome back</h2>
-        <p className="text-gray-500 mb-8 text-sm">Welcome back! Please enter your details.</p>
+        <h2 className="text-3xl font-bold mb-2 text-gray-900">Login to HireUp</h2>
+        <p className="text-gray-500 mb-8 text-sm">Welcome To HireUp! Please enter your details.</p>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div>

@@ -5,96 +5,40 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import Navbar from '../components/Navbar'
 
-const jobsData = [
-  { 
-    id: '1', 
-    title: 'Senior Frontend Engineer', 
-    company: 'TechCorp', 
-    location: 'Remote', 
-    salary: '$90k - $120k',
-    type: 'Full-time',
-    experience: '3-5 years',
-    skills: ['React', 'TypeScript', 'Tailwind CSS', 'Next.js'],
-    description: 'We are looking for a talented Frontend Engineer to join our team and help build amazing user experiences.',
-    posted: '2 days ago',
-    applicants: 45
-  },
-  { 
-    id: '2', 
-    title: 'Backend Developer', 
-    company: 'FinTech Solutions', 
-    location: 'New York, NY', 
-    salary: '$100k - $140k',
-    type: 'Full-time',
-    experience: '2-4 years',
-    skills: ['Node.js', 'Python', 'PostgreSQL', 'AWS'],
-    description: 'Join our backend team to build scalable APIs and microservices for our financial platform.',
-    posted: '1 week ago',
-    applicants: 32
-  },
-  { 
-    id: '3', 
-    title: 'Product Designer', 
-    company: 'Design Studio', 
-    location: 'San Francisco, CA', 
-    salary: '$110k - $150k',
-    type: 'Full-time',
-    experience: '4-6 years',
-    skills: ['Figma', 'Sketch', 'User Research', 'Prototyping'],
-    description: 'Create beautiful and intuitive user experiences for our design-focused products.',
-    posted: '3 days ago',
-    applicants: 28
-  },
-  { 
-    id: '4', 
-    title: 'Full Stack Developer', 
-    company: 'StartupXYZ', 
-    location: 'Austin, TX', 
-    salary: '$85k - $115k',
-    type: 'Full-time',
-    experience: '2-3 years',
-    skills: ['React', 'Node.js', 'MongoDB', 'Express'],
-    description: 'Work on both frontend and backend development for our growing startup.',
-    posted: '5 days ago',
-    applicants: 67
-  },
-  { 
-    id: '5', 
-    title: 'DevOps Engineer', 
-    company: 'CloudTech', 
-    location: 'Seattle, WA', 
-    salary: '$120k - $160k',
-    type: 'Full-time',
-    experience: '3-5 years',
-    skills: ['Docker', 'Kubernetes', 'AWS', 'Terraform'],
-    description: 'Manage our cloud infrastructure and deployment pipelines.',
-    posted: '1 day ago',
-    applicants: 23
-  },
-  { 
-    id: '6', 
-    title: 'Data Scientist', 
-    company: 'AI Innovations', 
-    location: 'Boston, MA', 
-    salary: '$130k - $170k',
-    type: 'Full-time',
-    experience: '4-6 years',
-    skills: ['Python', 'Machine Learning', 'TensorFlow', 'SQL'],
-    description: 'Build machine learning models and data pipelines for our AI products.',
-    posted: '4 days ago',
-    applicants: 41
-  }
-]
+// Fallback data used only until API loads
+const fallbackJobsData = []
 
 export default function Jobs() {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState('all')
   const [filterLocation, setFilterLocation] = useState('all')
-  const [filteredJobs, setFilteredJobs] = useState(jobsData)
+  const [allJobs, setAllJobs] = useState(fallbackJobsData)
+  const [filteredJobs, setFilteredJobs] = useState(fallbackJobsData)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    let filtered = jobsData
+    const fetchJobs = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const res = await fetch('/api/jobs')
+        if (!res.ok) throw new Error('Failed to load jobs')
+        const data = await res.json()
+        setAllJobs(data.jobs || [])
+        setFilteredJobs(data.jobs || [])
+      } catch (e) {
+        setError('Could not load jobs. Please try again later.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchJobs()
+  }, [])
+
+  useEffect(() => {
+    let filtered = allJobs
 
     if (searchTerm) {
       filtered = filtered.filter(job => 
@@ -115,7 +59,7 @@ export default function Jobs() {
     }
 
     setFilteredJobs(filtered)
-  }, [searchTerm, filterType, filterLocation])
+  }, [searchTerm, filterType, filterLocation, allJobs])
 
   const handleApply = (jobId) => {
     // Check if user is logged in
@@ -205,9 +149,13 @@ export default function Jobs() {
 
           {/* Results Count */}
           <div className="mb-6">
-            <p className="text-gray-600">
-              Showing {filteredJobs.length} of {jobsData.length} jobs
-            </p>
+            {loading ? (
+              <p className="text-gray-600">Loading jobs...</p>
+            ) : error ? (
+              <p className="text-red-600">{error}</p>
+            ) : (
+              <p className="text-gray-600">Showing {filteredJobs.length} of {allJobs.length} jobs</p>
+            )}
           </div>
 
           {/* Jobs Grid */}

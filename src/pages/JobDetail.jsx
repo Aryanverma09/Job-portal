@@ -1,111 +1,54 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import Navbar from '../components/Navbar'
 
-const jobsData = {
-  '1': { 
-    id: '1', 
-    title: 'Senior Frontend Engineer', 
-    company: 'TechCorp', 
-    location: 'Remote', 
-    salary: '$90k - $120k',
-    type: 'Full-time',
-    experience: '3-5 years',
-    skills: ['React', 'TypeScript', 'Tailwind CSS', 'Next.js'],
-    description: 'We are looking for a talented Frontend Engineer to join our team and help build amazing user experiences.',
-    requirements: [
-      '3+ years of experience with React and modern JavaScript',
-      'Strong understanding of TypeScript',
-      'Experience with CSS frameworks like Tailwind CSS',
-      'Knowledge of Next.js or similar frameworks',
-      'Experience with version control (Git)',
-      'Strong problem-solving skills'
-    ],
-    benefits: [
-      'Competitive salary and equity',
-      'Health, dental, and vision insurance',
-      'Flexible work arrangements',
-      'Professional development budget',
-      'Team building events',
-      '401(k) matching'
-    ],
-    posted: '2 days ago',
-    applicants: 45
-  },
-  '2': { 
-    id: '2', 
-    title: 'Backend Developer', 
-    company: 'FinTech Solutions', 
-    location: 'New York, NY', 
-    salary: '$100k - $140k',
-    type: 'Full-time',
-    experience: '2-4 years',
-    skills: ['Node.js', 'Python', 'PostgreSQL', 'AWS'],
-    description: 'Join our backend team to build scalable APIs and microservices for our financial platform.',
-    requirements: [
-      '2+ years of backend development experience',
-      'Proficiency in Node.js and Python',
-      'Experience with PostgreSQL or similar databases',
-      'Knowledge of AWS cloud services',
-      'Understanding of RESTful API design',
-      'Experience with microservices architecture'
-    ],
-    benefits: [
-      'Competitive salary package',
-      'Comprehensive health coverage',
-      'Remote work options',
-      'Learning and development opportunities',
-      'Stock options',
-      'Flexible PTO policy'
-    ],
-    posted: '1 week ago',
-    applicants: 32
-  },
-  '3': { 
-    id: '3', 
-    title: 'Product Designer', 
-    company: 'Design Studio', 
-    location: 'San Francisco, CA', 
-    salary: '$110k - $150k',
-    type: 'Full-time',
-    experience: '4-6 years',
-    skills: ['Figma', 'Sketch', 'User Research', 'Prototyping'],
-    description: 'Create beautiful and intuitive user experiences for our design-focused products.',
-    requirements: [
-      '4+ years of product design experience',
-      'Proficiency in Figma and Sketch',
-      'Strong user research skills',
-      'Experience with prototyping tools',
-      'Portfolio demonstrating design thinking',
-      'Collaboration skills with cross-functional teams'
-    ],
-    benefits: [
-      'Competitive salary and benefits',
-      'Health and wellness programs',
-      'Design conference attendance',
-      'Latest design tools and software',
-      'Creative work environment',
-      'Career growth opportunities'
-    ],
-    posted: '3 days ago',
-    applicants: 28
-  }
-}
+// No local data; fetched from API
 
 export default function JobDetail(){
   const { id } = useParams()
   const navigate = useNavigate()
   const [applying, setApplying] = useState(false)
-  const job = jobsData[id]
+  const [job, setJob] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  if(!job) return (
+  useEffect(() => {
+    const fetchJob = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const res = await fetch(`/api/jobs/${id}`)
+        if (!res.ok) throw new Error('Failed to load job')
+        const data = await res.json()
+        setJob(data.job)
+      } catch (e) {
+        setError('Could not load job. It may have been removed.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchJob()
+  }, [id])
+
+  if(loading) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <Card className="text-center p-8">
+        <CardContent>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Loading...</h1>
+          <p className="text-gray-600">Fetching job details</p>
+        </CardContent>
+      </Card>
+    </div>
+  )
+
+  if(error || !job) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <Card className="text-center p-8">
         <CardContent>
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Job Not Found</h1>
-          <p className="text-gray-600 mb-6">The job you're looking for doesn't exist or has been removed.</p>
+          <p className="text-gray-600 mb-6">{error || "The job you're looking for doesn't exist or has been removed."}</p>
           <Button onClick={() => navigate('/jobs')} className="bg-blue-600 hover:bg-blue-700 text-white">
             Browse All Jobs
           </Button>
@@ -114,7 +57,7 @@ export default function JobDetail(){
     </div>
   )
 
-  const handleApply = () => {
+  const handleApply = async () => {
     const token = localStorage.getItem('token')
     if (!token) {
       alert('Please log in to apply for this job')
@@ -123,11 +66,18 @@ export default function JobDetail(){
     }
     
     setApplying(true)
-    // Simulate application process
-    setTimeout(() => {
-      setApplying(false)
+    try {
+      const res = await fetch(`/api/jobs/${id}/apply`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Failed to apply')
       alert('Application submitted successfully!')
-    }, 2000)
+      // Optimistically update applicants count
+      setJob(prev => ({ ...prev, applicants: data.applicants ?? (prev.applicants + 1) }))
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setApplying(false)
+    }
   }
 
   return (
