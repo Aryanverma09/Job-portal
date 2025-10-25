@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { Building2, MapPin, Users, Star, Briefcase, Search, Filter } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
+import { Badge } from '../components/ui/badge'
 import Navbar from '../components/Navbar'
 
 const companies = [
@@ -114,158 +117,229 @@ export default function Companies(){
   }, [searchTerm, filterIndustry, filterLocation])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100">
+    <div className="min-h-screen bg-background">
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Discover Amazing Companies</h1>
-            <p className="text-lg text-gray-600">Find your next career opportunity with top companies</p>
+          {/* Header with animation */}
+          <motion.div 
+            className="text-center mb-12"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="flex justify-center mb-4">
+              <div className="p-4 bg-gradient-to-br from-blue-600 to-violet-600 rounded-2xl">
+                <Building2 className="h-12 w-12 text-white" />
+              </div>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+              Discover Amazing Companies
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Find your next career opportunity with top companies that match your skills and interests
+            </p>
+          </motion.div>
+
+          {/* Search and Filters with animation */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <Card className="mb-8 shadow-lg border-2 bg-gradient-to-br from-blue-50/50 to-violet-50/50 dark:from-blue-950/20 dark:to-violet-950/20">
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                      <Search className="h-4 w-4" />
+                      Search Companies
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Company name, industry..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                      <Filter className="h-4 w-4" />
+                      Industry
+                    </label>
+                    <select
+                      value={filterIndustry}
+                      onChange={(e) => setFilterIndustry(e.target.value)}
+                      className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="all">All Industries</option>
+                      <option value="software">Software</option>
+                      <option value="fintech">Financial Technology</option>
+                      <option value="design">Design & UX</option>
+                      <option value="technology">Technology</option>
+                      <option value="cloud">Cloud Computing</option>
+                      <option value="ai">Artificial Intelligence</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Location
+                    </label>
+                    <select
+                      value={filterLocation}
+                      onChange={(e) => setFilterLocation(e.target.value)}
+                      className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="all">All Locations</option>
+                      <option value="remote">Remote</option>
+                      <option value="new york">New York</option>
+                      <option value="san francisco">San Francisco</option>
+                      <option value="austin">Austin</option>
+                      <option value="seattle">Seattle</option>
+                      <option value="boston">Boston</option>
+                    </select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button 
+                      onClick={() => {
+                        setSearchTerm('')
+                        setFilterIndustry('all')
+                        setFilterLocation('all')
+                      }}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Clear Filters
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Results Count */}
+          <motion.div 
+            className="mb-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <p className="text-muted-foreground font-medium">
+              Showing <span className="text-foreground font-bold">{filteredCompanies.length}</span> of <span className="text-foreground font-bold">{companies.length}</span> companies
+            </p>
+          </motion.div>
+
+          {/* Companies Grid with staggered animation */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredCompanies.map((company, index) => (
+              <motion.div
+                key={company.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 * index, duration: 0.5 }}
+                whileHover={{ y: -8, transition: { duration: 0.2 } }}
+              >
+                <Card className="h-full hover:shadow-2xl transition-all duration-300 border-2 hover:border-blue-300 dark:hover:border-blue-700 cursor-pointer group">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start space-x-4">
+                      {/* Company Logo */}
+                      <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-violet-600 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg group-hover:scale-110 transition-transform">
+                        {company.logo}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-xl font-semibold mb-1 group-hover:text-blue-600 transition-colors">
+                          {company.name}
+                        </CardTitle>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                          <Building2 className="h-3.5 w-3.5" />
+                          <span className="truncate">{company.industry}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <MapPin className="h-3.5 w-3.5" />
+                          <span className="truncate">{company.location}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="pt-0 space-y-4">
+                    {/* Description */}
+                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                      {company.description}
+                    </p>
+                    
+                    {/* Company Info Badges */}
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        <Users className="h-3 w-3 mr-1" />
+                        {company.size.split(' ')[0]}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
+                        {company.rating}
+                      </Badge>
+                      <Badge className="text-xs bg-gradient-to-r from-blue-600 to-violet-600 text-white">
+                        <Briefcase className="h-3 w-3 mr-1" />
+                        {company.jobs} jobs
+                      </Badge>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <Button 
+                        onClick={() => navigate(`/companies/${company.id}`)}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        View Company
+                      </Button>
+                      <Button 
+                        onClick={() => navigate('/jobs')}
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 text-white"
+                      >
+                        View Jobs
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
           </div>
 
-          {/* Search and Filters */}
-          <Card className="mb-8 shadow-lg">
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Search Companies</label>
-                  <Input
-                    type="text"
-                    placeholder="Company name, industry, or description..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
-                  <select
-                    value={filterIndustry}
-                    onChange={(e) => setFilterIndustry(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="all">All Industries</option>
-                    <option value="software">Software</option>
-                    <option value="fintech">Financial Technology</option>
-                    <option value="design">Design & UX</option>
-                    <option value="technology">Technology</option>
-                    <option value="cloud">Cloud Computing</option>
-                    <option value="ai">Artificial Intelligence</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                  <select
-                    value={filterLocation}
-                    onChange={(e) => setFilterLocation(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="all">All Locations</option>
-                    <option value="remote">Remote</option>
-                    <option value="new york">New York</option>
-                    <option value="san francisco">San Francisco</option>
-                    <option value="austin">Austin</option>
-                    <option value="seattle">Seattle</option>
-                    <option value="boston">Boston</option>
-                  </select>
-                </div>
-                <div className="flex items-end">
-                  <Button 
+          {filteredCompanies.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Card className="text-center py-16 border-2">
+                <CardContent>
+                  <div className="flex justify-center mb-6">
+                    <div className="p-4 bg-gradient-to-br from-blue-100 to-violet-100 dark:from-blue-900/30 dark:to-violet-900/30 rounded-full">
+                      <Building2 className="w-16 h-16 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2">No companies found</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Try adjusting your search criteria or clear filters
+                  </p>
+                  <Button
                     onClick={() => {
                       setSearchTerm('')
                       setFilterIndustry('all')
                       setFilterLocation('all')
                     }}
-                    variant="outline"
-                    className="w-full"
+                    className="bg-gradient-to-r from-blue-600 to-violet-600"
                   >
-                    Clear Filters
+                    Reset Filters
                   </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Results Count */}
-          <div className="mb-6">
-            <p className="text-gray-600">
-              Showing {filteredCompanies.length} of {companies.length} companies
-            </p>
-          </div>
-
-          {/* Companies Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredCompanies.map((company) => (
-              <Card key={company.id} className="hover:shadow-xl transition-shadow duration-300 bg-white">
-                <CardHeader className="pb-4">
-                  <div className="flex items-start space-x-4">
-                    <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white text-xl font-bold">
-                      {company.logo}
-                    </div>
-                    <div className="flex-1">
-                      <CardTitle className="text-xl font-semibold text-gray-900 mb-1">
-                        {company.name}
-                      </CardTitle>
-                      <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
-                        <span>{company.industry}</span>
-                        <span>•</span>
-                        <span>{company.location}</span>
-                      </div>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span>{company.size}</span>
-                        <span>•</span>
-                        <span>Founded {company.founded}</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center space-x-1 mb-1">
-                        <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        <span className="font-medium">{company.rating}</span>
-                      </div>
-                      <div className="text-sm text-gray-500">{company.jobs} open jobs</div>
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="pt-0">
-                  <p className="text-gray-700 text-sm mb-4 line-clamp-2">{company.description}</p>
-                  
-                  <div className="flex space-x-2">
-                    <Button 
-                      onClick={() => navigate(`/companies/${company.id}`)}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      View Company
-                    </Button>
-                    <Button 
-                      onClick={() => navigate('/jobs')}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                      View Jobs ({company.jobs})
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-
-          {filteredCompanies.length === 0 && (
-            <Card className="text-center py-12">
-              <CardContent>
-                <div className="text-gray-500">
-                  <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  <h3 className="text-lg font-medium mb-2">No companies found</h3>
-                  <p className="text-sm">Try adjusting your search criteria</p>
-                </div>
-              </CardContent>
-            </Card>
+            </motion.div>
           )}
         </div>
       </div>

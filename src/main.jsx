@@ -4,11 +4,14 @@ import ReactDOM from 'react-dom/client';
 // use react-router-dom in web apps
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import App from './App';
+import { ThemeProvider } from './components/ThemeProvider';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </ThemeProvider>
   </React.StrictMode>
 );

@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
+import mongoose from 'mongoose'
 // import pdfParse from 'pdf-parse' // Temporarily disabled due to package issues
 import mammoth from 'mammoth'
 import OpenAI from 'openai'
@@ -49,65 +50,240 @@ if (process.env.OPENAI_API_KEY) {
 // Middleware for file upload
 export const uploadMiddleware = upload.single('resume')
 
-export const UserRegister =async (req,res)=>{
-    console.log("Register route hit");
-    const {name ,email ,password} = req.body
-    if(!name || !email || !password){
-        return res.status(400).json({ message: "name, email and password are required" })
+export const UserRegister = async (req, res) => {
+    console.log("📝 Register route hit");
+    console.log("📦 Request body:", { ...req.body, password: "***hidden***" });
+    
+    const { name, email, password } = req.body;
+    
+    // ✅ VALIDATION: Check if all required fields are present
+    if (!name || !email || !password) {
+        console.log("❌ Validation failed: Missing required fields");
+        return res.status(400).json({ 
+            message: "Name, email and password are required",
+            errors: {
+                name: !name ? "Name is required" : null,
+                email: !email ? "Email is required" : null,
+                password: !password ? "Password is required" : null
+            }
+        });
     }
-    try{
-        const existingUser = await User.findOne({email});
-        if(existingUser){
-            return res.status(400).json({ message: "Email already exists" })
+    
+    // ✅ VALIDATION: Email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        console.log("❌ Validation failed: Invalid email format");
+        return res.status(400).json({ message: "Invalid email format" });
+    }
+    
+    // ✅ VALIDATION: Password strength (minimum 8 characters)
+    if (password.length < 8) {
+        console.log("❌ Validation failed: Password too short");
+        return res.status(400).json({ 
+            message: "Password must be at least 8 characters long" 
+        });
+    }
+    
+    try {
+        // ✅ CHECK: Verify database connection
+        if (mongoose.connection.readyState !== 1) {
+            console.error("❌ Database not connected");
+            return res.status(500).json({ 
+                message: "Database connection error. Please try again later." 
+            });
         }
-
-        // hash password
-        const hashed = await bcrypt.hash(password, 10)
-
+        
+        console.log("🔍 Checking if email already exists:", email);
+        const existingUser = await User.findOne({ email });
+        
+        if (existingUser) {
+            console.log("❌ Email already registered:", email);
+            return res.status(400).json({ 
+                message: "Email already exists. Please use a different email or login." 
+            });
+        }
+        
+        console.log("🔐 Hashing password...");
+        // ✅ SECURITY: Hash password with bcrypt (10 rounds)
+        const hashed = await bcrypt.hash(password, 10);
+        
+        console.log("💾 Creating new user...");
         const newUser = new User({
-            name ,
+            name,
             email,
-            password: hashed
-        })
-        await newUser.save()
-
-        // create token
-        const token = jwt.sign({ id: newUser._id, email: newUser.email, name: newUser.name, role: newUser.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' })
-
-        // return user (without password) and token
-        const userSafe = { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role }
-        return res.status(201).json({ message: "User Registered", user: userSafe, token })
-    }catch(err){
-        console.error(err)
-        return res.status(500).json({ message: "Server error" })
+            password: hashed,
+            role: 'user' // Default role
+        });
+        
+        await newUser.save();
+        console.log("✅ User created successfully:", newUser._id);
+        
+        // ✅ JWT: Generate authentication token
+        if (!process.env.JWT_SECRET) {
+            console.warn("⚠️  JWT_SECRET not set, using default (INSECURE!)");
+        }
+        
+        const token = jwt.sign(
+            { 
+                id: newUser._id, 
+                email: newUser.email, 
+                name: newUser.name, 
+                role: newUser.role 
+            }, 
+            process.env.JWT_SECRET || 'secret', 
+            { expiresIn: '7d' }
+        );
+        
+        // ✅ RESPONSE: Return user data (without password) and token
+        const userSafe = { 
+            id: newUser._id, 
+            name: newUser.name, 
+            email: newUser.email, 
+            role: newUser.role 
+        };
+        
+        console.log("🎉 Registration successful for:", email);
+        return res.status(201).json({ 
+            message: "User registered successfully", 
+            user: userSafe, 
+            token 
+        });
+        
+    } catch (err) {
+        console.error("❌ Registration error:", err);
+        console.error("Stack trace:", err.stack);
+        
+        // ✅ ERROR HANDLING: Handle specific MongoDB errors
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ 
+                message: "Validation error", 
+                errors: err.errors 
+            });
+        }
+        
+        if (err.code === 11000) {
+            // Duplicate key error
+            return res.status(400).json({ 
+                message: "Email already exists" 
+            });
+        }
+        
+        return res.status(500).json({ 
+            message: "Server error. Please try again later.",
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 }
 
-export const UserLogin = async(req,res)=>{
-    const {email ,password}=req.body;
-    if(!email || !password){
-        return res.status(400).json({ message: "Email and Password are required" })
+export const UserLogin = async (req, res) => {
+    console.log("🔑 Login route hit");
+    console.log("📦 Request body:", { email: req.body.email, password: "***hidden***" });
+    
+    const { email, password } = req.body;
+    
+    // ✅ VALIDATION: Check if all required fields are present
+    if (!email || !password) {
+        console.log("❌ Validation failed: Missing credentials");
+        return res.status(400).json({ 
+            message: "Email and password are required",
+            errors: {
+                email: !email ? "Email is required" : null,
+                password: !password ? "Password is required" : null
+            }
+        });
     }
-    try{
-        // find by email then compare password
-        const user = await User.findOne({ email })
+    
+    // ✅ VALIDATION: Email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        console.log("❌ Validation failed: Invalid email format");
+        return res.status(400).json({ message: "Invalid email format" });
+    }
+    
+    try {
+        // ✅ CHECK: Verify database connection
+        if (mongoose.connection.readyState !== 1) {
+            console.error("❌ Database not connected");
+            return res.status(500).json({ 
+                message: "Database connection error. Please try again later." 
+            });
+        }
+        
+        console.log("🔍 Finding user by email:", email);
+        // ✅ FIND: Look up user by email
+        const user = await User.findOne({ email });
+        
         if (!user) {
-            return res.status(400).json({ message: "User does not exist" })
+            console.log("❌ User not found:", email);
+            // ⚠️ SECURITY: Don't reveal whether email exists or not
+            return res.status(401).json({ 
+                message: "Invalid email or password" 
+            });
         }
-
-        const match = await bcrypt.compare(password, user.password)
+        
+        console.log("✅ User found:", user._id);
+        console.log("🔐 Verifying password...");
+        
+        // ✅ SECURITY: Compare password with hashed password
+        const match = await bcrypt.compare(password, user.password);
+        
         if (!match) {
-            return res.status(400).json({ message: "Password is incorrect" })
+            console.log("❌ Password mismatch for:", email);
+            // ⚠️ SECURITY: Don't reveal whether email or password is wrong
+            return res.status(401).json({ 
+                message: "Invalid email or password" 
+            });
         }
-
-        // create token
-        const token = jwt.sign({ id: user._id, email: user.email, name: user.name, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' })
-
-        const userSafe = { id: user._id, name: user.name, email: user.email, role: user.role }
-        return res.status(200).json({ message: "User Login", user: userSafe, token })
-    } catch(err){
-        console.error(err)
-        return res.status(500).json({ message: "Server error" })
+        
+        console.log("✅ Password verified");
+        
+        // ✅ CHECK: Verify user is active
+        if (user.isActive === false) {
+            console.log("❌ Account is deactivated:", email);
+            return res.status(403).json({ 
+                message: "Your account has been deactivated. Please contact support." 
+            });
+        }
+        
+        // ✅ JWT: Generate authentication token
+        if (!process.env.JWT_SECRET) {
+            console.warn("⚠️  JWT_SECRET not set, using default (INSECURE!)");
+        }
+        
+        const token = jwt.sign(
+            { 
+                id: user._id, 
+                email: user.email, 
+                name: user.name, 
+                role: user.role 
+            }, 
+            process.env.JWT_SECRET || 'secret', 
+            { expiresIn: '7d' }
+        );
+        
+        // ✅ RESPONSE: Return user data (without password) and token
+        const userSafe = { 
+            id: user._id, 
+            name: user.name, 
+            email: user.email, 
+            role: user.role 
+        };
+        
+        console.log("🎉 Login successful for:", email);
+        return res.status(200).json({ 
+            message: "Login successful", 
+            user: userSafe, 
+            token 
+        });
+        
+    } catch (err) {
+        console.error("❌ Login error:", err);
+        console.error("Stack trace:", err.stack);
+        
+        return res.status(500).json({ 
+            message: "Server error. Please try again later.",
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 }
 

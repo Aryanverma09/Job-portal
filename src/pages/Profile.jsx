@@ -1,364 +1,657 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { motion } from 'framer-motion'
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  Calendar,
+  FileText,
+  Upload,
+  Edit,
+  Save,
+  X,
+  CheckCircle2,
+  Clock,
+  Building2,
+  DollarSign,
+  ExternalLink
+} from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { Textarea } from '../components/ui/textarea'
+import { Badge } from '../components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import Navbar from '../components/Navbar'
 
-
-const Profile = () => {
+export default function Profile() {
   const navigate = useNavigate()
+  const [editing, setEditing] = useState(false)
   const [user, setUser] = useState(null)
-  const [resume, setResume] = useState(null)
-  const [uploading, setUploading] = useState(false)
-  const [matchedJobs, setMatchedJobs] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    title: '',
+    bio: '',
+    skills: [],
+    experience: '',
+    education: '',
+    linkedin: '',
+    github: '',
+    portfolio: ''
+  })
+
+  // Mock applied jobs data
+  const [appliedJobs, setAppliedJobs] = useState([
+    {
+      id: 1,
+      title: "Senior Full Stack Developer",
+      company: "TechCorp Inc",
+      location: "San Francisco, CA",
+      appliedDate: "2024-01-15",
+      status: "Under Review",
+      salary: "$120k - $180k",
+      logo: "🚀"
+    },
+    {
+      id: 2,
+      title: "Product Designer",
+      company: "Design Studio",
+      location: "Remote",
+      appliedDate: "2024-01-10",
+      status: "Interview Scheduled",
+      salary: "$90k - $130k",
+      logo: "🎨"
+    },
+    {
+      id: 3,
+      title: "Data Scientist",
+      company: "DataTech Solutions",
+      location: "New York, NY",
+      appliedDate: "2024-01-05",
+      status: "Rejected",
+      salary: "$130k - $170k",
+      logo: "📊"
+    }
+  ])
+
+  // Mock saved jobs
+  const [savedJobs, setSavedJobs] = useState([
+    {
+      id: 5,
+      title: "Marketing Manager",
+      company: "Growth Marketing Co",
+      location: "Boston, MA",
+      type: "Full-time",
+      salary: "$85k - $120k",
+      logo: "📈"
+    },
+    {
+      id: 6,
+      title: "Frontend Developer",
+      company: "WebDev Studios",
+      location: "Remote",
+      type: "Part-time",
+      salary: "$60k - $90k",
+      logo: "💻"
+    }
+  ])
 
   useEffect(() => {
-    // Get user from localStorage
-    const userData = localStorage.getItem('user')
-    console.log('User data from localStorage:', userData)
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData)
-        console.log('Parsed user:', parsedUser)
-        setUser(parsedUser)
-      } catch (error) {
-        console.error('Error parsing user data:', error)
-      }
-    } else {
-      console.log('No user data found in localStorage')
-      // Redirect to login if no user data
-      setTimeout(() => {
-        navigate('/')
-      }, 2000)
+    const userJson = localStorage.getItem('user')
+    if (userJson) {
+      const userData = JSON.parse(userJson)
+      setUser(userData)
+      setFormData({
+        name: userData.name || '',
+        email: userData.email || '',
+        phone: userData.phone || '+1 (555) 123-4567',
+        location: userData.location || 'San Francisco, CA',
+        title: userData.title || 'Full Stack Developer',
+        bio: userData.bio || 'Passionate developer with 5+ years of experience building modern web applications.',
+        skills: userData.skills || ['React', 'Node.js', 'TypeScript', 'AWS', 'MongoDB'],
+        experience: userData.experience || '5+ years',
+        education: userData.education || 'BS Computer Science, Stanford University',
+        linkedin: userData.linkedin || '',
+        github: userData.github || '',
+        portfolio: userData.portfolio || ''
+      })
     }
   }, [])
 
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0]
-    if (!file) return
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
 
-    // Validate file type
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-    if (!allowedTypes.includes(file.type)) {
-      alert('Please upload a PDF or Word document')
-      return
-    }
+  const handleSave = () => {
+    // Save to localStorage
+    const updatedUser = { ...user, ...formData }
+    localStorage.setItem('user', JSON.stringify(updatedUser))
+    setUser(updatedUser)
+    setEditing(false)
+    alert('Profile updated successfully!')
+  }
 
-    // Validate file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB')
-      return
-    }
-
-    setUploading(true)
-    const formData = new FormData()
-    formData.append('resume', file)
-    formData.append('userId', user.id)
-
-    try {
-      const response = await fetch('/api/users/upload-resume', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-
-      const data = await response.json()
-      
-      if (response.ok) {
-        setResume(data.resume)
-        alert('Resume uploaded successfully!')
-        // Automatically get job matches
-        await getJobMatches(data.resume)
-      } else {
-        alert(data.message || 'Failed to upload resume')
-      }
-    } catch (error) {
-      console.error('Upload error:', error)
-      alert('Failed to upload resume')
-    } finally {
-      setUploading(false)
+  const handleSkillAdd = (skill) => {
+    if (skill && !formData.skills.includes(skill)) {
+      setFormData(prev => ({ ...prev, skills: [...prev.skills, skill] }))
     }
   }
 
-  const getJobMatches = async (resumeData) => {
-    setLoading(true)
-    try {
-      const response = await fetch('/api/users/get-matched-jobs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ resumeData })
-      })
+  const handleSkillRemove = (skillToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      skills: prev.skills.filter(s => s !== skillToRemove)
+    }))
+  }
 
-      const data = await response.json()
-      
-      if (response.ok) {
-        setMatchedJobs(data.jobs)
-      } else {
-        console.error('Failed to get job matches:', data.message)
-      }
-    } catch (error) {
-      console.error('Error getting job matches:', error)
-    } finally {
-      setLoading(false)
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Under Review':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+      case 'Interview Scheduled':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+      case 'Rejected':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
     }
   }
 
-  const downloadResume = () => {
-    if (resume && resume.filePath) {
-      window.open(`${resume.filePath.startsWith('/uploads') ? '' : '/uploads/'}${resume.filePath.replace(/^\\?/,'')}`, '_blank')
-    }
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">Please log in to view your profile.</p>
+              <Button onClick={() => navigate('/login')} className="mt-4">
+                Go to Login
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Header Section */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">My Profile</h1>
-            <p className="text-lg text-gray-600">Manage your resume and discover job opportunities</p>
-          </div>
-          
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-            {/* User Information */}
-            <div className="xl:col-span-1">
-              <Card className="h-fit shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
-                  <CardTitle className="flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Personal Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  {user ? (
-                    <div className="space-y-6">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
-                          {user.name ? user.name.split(' ').map(n => n[0]).join('') : 'U'}
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-semibold text-gray-900">{user.name || 'User'}</h3>
-                          <p className="text-gray-600">{user.email || 'No email'}</p>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span className="text-sm text-gray-600">Profile Complete</span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          <span className="text-sm text-gray-600">Ready for Job Matching</span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="text-gray-500 mb-4">
-                        <svg className="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        <p className="text-lg font-medium">Please log in to view your profile</p>
-                        <p className="text-sm mb-4">You need to be logged in to access this page.</p>
-                        <Button 
-                          onClick={() => navigate('/')}
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                          Go to Login
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h1 className="text-4xl font-bold mb-2">
+            My <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Dashboard</span>
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Manage your profile and track your applications
+          </p>
+        </motion.div>
 
-            {/* Resume Upload Section */}
-            <div className="xl:col-span-2">
-              <Card className="shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-lg">
-                  <CardTitle className="flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    Resume Upload & Analysis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="space-y-6">
-                    {/* Upload Area */}
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
-                      <div className="space-y-4">
-                        <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                          <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-medium text-gray-900 mb-2">Upload Your Resume</h3>
-                          <p className="text-gray-600 mb-4">Drag and drop your resume here, or click to browse</p>
-                          <div className="flex items-center justify-center space-x-4">
-                            <Input
-                              type="file"
-                              accept=".pdf,.doc,.docx"
-                              onChange={handleFileUpload}
-                              disabled={uploading}
-                              className="hidden"
-                              id="resume-upload"
-                            />
-                            <Button
-                              onClick={() => document.getElementById('resume-upload').click()}
-                              disabled={uploading}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
-                            >
-                              {uploading ? (
-                                <div className="flex items-center space-x-2">
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                  <span>Uploading...</span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center space-x-2">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                  </svg>
-                                  <span>Choose File</span>
-                                </div>
-                              )}
-                            </Button>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-2">Supports PDF, DOC, DOCX files up to 5MB</p>
-                        </div>
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-3">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="applications">Applications</TabsTrigger>
+            <TabsTrigger value="saved">Saved Jobs</TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Profile Card */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="lg:col-span-1"
+              >
+                <Card className="border-2">
+                  <CardHeader className="text-center pb-4">
+                    <div className="mx-auto mb-4">
+                      <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-4xl font-bold shadow-2xl">
+                        {formData.name.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
                       </div>
                     </div>
-                    
-                    {/* Current Resume Display */}
-                    {resume && (
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center space-x-4">
-                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                              </svg>
-                            </div>
-                            <div>
-                              <h3 className="font-semibold text-gray-900">Resume Uploaded Successfully</h3>
-                              <p className="text-sm text-gray-600">{resume.originalName}</p>
-                              <p className="text-xs text-gray-500">Uploaded: {new Date(resume.uploadedAt).toLocaleDateString()}</p>
-                            </div>
+                    {editing ? (
+                      <div className="space-y-3">
+                        <Input
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          placeholder="Full Name"
+                        />
+                        <Input
+                          name="title"
+                          value={formData.title}
+                          onChange={handleInputChange}
+                          placeholder="Job Title"
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <CardTitle className="text-2xl">{formData.name}</CardTitle>
+                        <CardDescription className="text-base">{formData.title}</CardDescription>
+                      </>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Contact Info */}
+                    <div className="space-y-3">
+                      {editing ? (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <Input
+                              name="email"
+                              type="email"
+                              value={formData.email}
+                              onChange={handleInputChange}
+                              placeholder="Email"
+                              className="flex-1"
+                            />
                           </div>
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <Input
+                              name="phone"
+                              value={formData.phone}
+                              onChange={handleInputChange}
+                              placeholder="Phone"
+                              className="flex-1"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <Input
+                              name="location"
+                              value={formData.location}
+                              onChange={handleInputChange}
+                              placeholder="Location"
+                              className="flex-1"
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-3 text-sm">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span>{formData.email}</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <span>{formData.phone}</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <span>{formData.location}</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm">
+                            <Briefcase className="h-4 w-4 text-muted-foreground" />
+                            <span>{formData.experience}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="pt-4 border-t space-y-2">
+                      {editing ? (
+                        <>
                           <Button 
-                            onClick={downloadResume} 
-                            variant="outline" 
-                            size="sm"
-                            className="border-green-300 text-green-700 hover:bg-green-50"
+                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600"
+                            onClick={handleSave}
                           >
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Download
+                            <Save className="h-4 w-4 mr-2" />
+                            Save Changes
                           </Button>
+                          <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => setEditing(false)}
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button 
+                            className="w-full"
+                            onClick={() => setEditing(true)}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Profile
+                          </Button>
+                          <Button variant="outline" className="w-full">
+                            <Upload className="h-4 w-4 mr-2" />
+                            Upload Resume
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Stats Card */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="mt-6"
+                >
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Quick Stats</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Applied Jobs</span>
+                        <span className="font-bold text-lg">{appliedJobs.length}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Saved Jobs</span>
+                        <span className="font-bold text-lg">{savedJobs.length}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Profile Views</span>
+                        <span className="font-bold text-lg">127</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </motion.div>
+
+              {/* Details Section */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="lg:col-span-2 space-y-6"
+              >
+                {/* About Me */}
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle>About Me</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {editing ? (
+                      <Textarea
+                        name="bio"
+                        value={formData.bio}
+                        onChange={handleInputChange}
+                        placeholder="Tell us about yourself..."
+                        rows={4}
+                      />
+                    ) : (
+                      <p className="text-muted-foreground">{formData.bio}</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Skills */}
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle>Skills</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.skills.map((skill, index) => (
+                        <Badge key={index} variant="secondary" className="px-3 py-1.5 text-sm">
+                          {skill}
+                          {editing && (
+                            <button
+                              onClick={() => handleSkillRemove(skill)}
+                              className="ml-2 hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
+                        </Badge>
+                      ))}
+                      {editing && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const skill = prompt('Enter a skill:')
+                            if (skill) handleSkillAdd(skill)
+                          }}
+                        >
+                          + Add Skill
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Experience & Education */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Experience</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {editing ? (
+                        <Input
+                          name="experience"
+                          value={formData.experience}
+                          onChange={handleInputChange}
+                          placeholder="e.g., 5+ years"
+                        />
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <Briefcase className="h-5 w-5 text-blue-600" />
+                          <span>{formData.experience}</span>
                         </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Education</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {editing ? (
+                        <Input
+                          name="education"
+                          value={formData.education}
+                          onChange={handleInputChange}
+                          placeholder="e.g., BS Computer Science"
+                        />
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-indigo-600" />
+                          <span>{formData.education}</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Links */}
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle>Professional Links</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {editing ? (
+                      <div className="space-y-3">
+                        <Input
+                          name="linkedin"
+                          value={formData.linkedin}
+                          onChange={handleInputChange}
+                          placeholder="LinkedIn URL"
+                        />
+                        <Input
+                          name="github"
+                          value={formData.github}
+                          onChange={handleInputChange}
+                          placeholder="GitHub URL"
+                        />
+                        <Input
+                          name="portfolio"
+                          value={formData.portfolio}
+                          onChange={handleInputChange}
+                          placeholder="Portfolio URL"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-3">
+                        {formData.linkedin && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={formData.linkedin} target="_blank" rel="noopener noreferrer">
+                              LinkedIn <ExternalLink className="h-3 w-3 ml-2" />
+                            </a>
+                          </Button>
+                        )}
+                        {formData.github && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={formData.github} target="_blank" rel="noopener noreferrer">
+                              GitHub <ExternalLink className="h-3 w-3 ml-2" />
+                            </a>
+                          </Button>
+                        )}
+                        {formData.portfolio && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={formData.portfolio} target="_blank" rel="noopener noreferrer">
+                              Portfolio <ExternalLink className="h-3 w-3 ml-2" />
+                            </a>
+                          </Button>
+                        )}
+                        {!formData.linkedin && !formData.github && !formData.portfolio && (
+                          <p className="text-sm text-muted-foreground">No links added yet</p>
+                        )}
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+          </TabsContent>
+
+          {/* Applications Tab */}
+          <TabsContent value="applications">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
+            >
+              <Card className="border-2">
+                <CardHeader>
+                  <CardTitle>My Applications</CardTitle>
+                  <CardDescription>Track the status of your job applications</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {appliedJobs.map((job) => (
+                    <Card key={job.id} className="hover:shadow-lg transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col md:flex-row gap-4">
+                          <div className="flex-shrink-0">
+                            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-3xl">
+                              {job.logo}
+                            </div>
+                          </div>
+                          <div className="flex-1 space-y-3">
+                            <div>
+                              <h3 className="text-lg font-bold">{job.title}</h3>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Building2 className="h-4 w-4" />
+                                <span>{job.company}</span>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-4 text-sm">
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <MapPin className="h-4 w-4" />
+                                <span>{job.location}</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <Calendar className="h-4 w-4" />
+                                <span>Applied {job.appliedDate}</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-green-600 font-semibold">
+                                <DollarSign className="h-4 w-4" />
+                                <span>{job.salary}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <Badge className={getStatusColor(job.status)}>
+                                {job.status}
+                              </Badge>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => navigate(`/jobs/${job.id}`)}
+                              >
+                                View Details
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+
+          {/* Saved Jobs Tab */}
+          <TabsContent value="saved">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
+            >
+              <Card className="border-2">
+                <CardHeader>
+                  <CardTitle>Saved Jobs</CardTitle>
+                  <CardDescription>Jobs you've bookmarked for later</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {savedJobs.map((job) => (
+                      <Card key={job.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(`/jobs/${job.id}`)}>
+                        <CardContent className="p-6">
+                          <div className="flex gap-4">
+                            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-2xl flex-shrink-0">
+                              {job.logo}
+                            </div>
+                            <div className="flex-1 space-y-2">
+                              <h3 className="font-bold">{job.title}</h3>
+                              <p className="text-sm text-muted-foreground">{job.company}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <MapPin className="h-3 w-3" />
+                                <span>{job.location}</span>
+                              </div>
+                              <div className="flex items-center justify-between pt-2">
+                                <span className="text-sm font-semibold text-green-600">{job.salary}</span>
+                                <Badge variant="secondary">{job.type}</Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          </div>
-
-          {/* Matched Jobs */}
-          {matchedJobs.length > 0 && (
-            <Card className="mt-8 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6" />
-                  </svg>
-                  Recommended Jobs Based on Your Resume
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                {loading ? (
-                  <div className="text-center py-8">
-                    <div className="inline-flex items-center space-x-2">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-                      <span className="text-gray-600">Finding matching jobs...</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {matchedJobs.map((job, index) => (
-                      <div key={index} className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow bg-white">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
-                            <h3 className="text-xl font-semibold text-gray-900 mb-1">{job.title}</h3>
-                            <p className="text-gray-600 font-medium mb-2">{job.company}</p>
-                            <p className="text-sm text-gray-500 mb-3">{job.location}</p>
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <div className="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full mb-2">
-                              {job.matchScore}% Match
-                            </div>
-                            <div className="text-sm text-gray-600">{job.salary}</div>
-                          </div>
-                        </div>
-                        
-                        <p className="text-gray-700 text-sm mb-4 line-clamp-2">{job.description}</p>
-                        
-                        <div className="space-y-3">
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-900 mb-2">Required Skills:</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {job.skills && job.skills.map((skill, skillIndex) => (
-                                <span key={skillIndex} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
-                                  {skill}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          
-                          {job.matchedSkills && job.matchedSkills.length > 0 && (
-                            <div>
-                              <h4 className="text-sm font-medium text-green-700 mb-2">Your Matching Skills:</h4>
-                              <div className="flex flex-wrap gap-2">
-                                {job.matchedSkills.map((skill, skillIndex) => (
-                                  <span key={skillIndex} className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
-                                    {skill}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="mt-4 pt-4 border-t border-gray-100">
-                          <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
-                            Apply Now
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
+            </motion.div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )
 }
-
-export default Profile
