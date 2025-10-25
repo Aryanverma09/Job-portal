@@ -155,3 +155,4 @@ Look for these in terminal:
 
 **✅ The 500 error is FIXED! Just run the setup script.**
 
+

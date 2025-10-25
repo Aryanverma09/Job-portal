@@ -393,3 +393,4 @@ Your modern Job Portal UI is complete and production-ready! The codebase is:
 
 Start the development server with `npm run dev` and explore your new Job Portal!
 
+

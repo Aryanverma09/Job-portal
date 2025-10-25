@@ -407,3 +407,4 @@ This project is created as a demonstration of modern React UI development.
 
 **Built with ❤️ using React, Vite, Tailwind CSS, and shadcn/ui**
 
+

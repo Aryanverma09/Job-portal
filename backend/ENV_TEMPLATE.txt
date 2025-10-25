@@ -39,3 +39,4 @@ FRONTEND_URL=http://localhost:5173
 # 5. Add OPENAI_API_KEY if you want AI resume parsing
 # ========================================
 
+
