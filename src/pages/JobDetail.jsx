@@ -14,13 +14,17 @@ import {
   Share2,
   Bookmark,
   ArrowLeft,
-  ExternalLink
+  ExternalLink,
+  X
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { Textarea } from '../components/ui/textarea'
 import Navbar from '../components/Navbar'
+import { useToast } from '../components/ui/toast'
+import axios from 'axios'
 
 // Mock job data
 const mockJobDetails = {
@@ -122,10 +126,15 @@ const relatedJobs = [
 export default function JobDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { success, error, info } = useToast()
   const [job, setJob] = useState(mockJobDetails)
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
   const [applied, setApplied] = useState(false)
+  const [showApplyModal, setShowApplyModal] = useState(false)
+  const [coverLetter, setCoverLetter] = useState('')
+  const [generatingCoverLetter, setGeneratingCoverLetter] = useState(false)
+  const [applying, setApplying] = useState(false)
 
   useEffect(() => {
     const fetchJobDetail = async () => {
@@ -147,15 +156,97 @@ export default function JobDetail() {
     fetchJobDetail()
   }, [id])
 
-  const handleApply = () => {
+  const handleOneClickApply = async () => {
     const token = localStorage.getItem('token')
     if (!token) {
-      alert('Please log in to apply for jobs')
+      error('Please log in to apply for jobs')
       navigate('/login')
       return
     }
-    setApplied(true)
-    alert('Application submitted successfully!')
+
+    // Check if already applied
+    try {
+      const headers = { Authorization: `Bearer ${token}` }
+      const appsRes = await axios.get('/api/applications/my-applications', { headers })
+      const hasApplied = appsRes.data.applications?.some(app => app.job.id === id)
+      
+      if (hasApplied) {
+        setApplied(true)
+        error('You have already applied for this job')
+        return
+      }
+    } catch (err) {
+      console.error('Failed to check applications:', err)
+    }
+
+    setApplying(true)
+    try {
+      const headers = { Authorization: `Bearer ${token}` }
+      await axios.post('/api/applications/apply', {
+        jobId: id,
+        coverLetter: ''
+      }, { headers })
+      
+      setApplied(true)
+      setShowApplyModal(false)
+      success('Application submitted successfully!')
+    } catch (err) {
+      console.error('Application error:', err)
+      error(err.response?.data?.message || 'Failed to submit application')
+    } finally {
+      setApplying(false)
+    }
+  }
+
+  const handleGenerateCoverLetter = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      error('Please log in to use this feature')
+      return
+    }
+
+    setGeneratingCoverLetter(true)
+    try {
+      const headers = { Authorization: `Bearer ${token}` }
+      const res = await axios.post('/api/ai/cover-letter', {
+        jobId: id
+      }, { headers })
+      
+      setCoverLetter(res.data.coverLetter || '')
+      success('Cover letter generated! Review and edit as needed.')
+    } catch (err) {
+      console.error('Cover letter generation error:', err)
+      error('Failed to generate cover letter')
+    } finally {
+      setGeneratingCoverLetter(false)
+    }
+  }
+
+  const handleApplyWithCoverLetter = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      error('Please log in to apply for jobs')
+      navigate('/login')
+      return
+    }
+
+    setApplying(true)
+    try {
+      const headers = { Authorization: `Bearer ${token}` }
+      await axios.post('/api/applications/apply', {
+        jobId: id,
+        coverLetter: coverLetter
+      }, { headers })
+      
+      setApplied(true)
+      setShowApplyModal(false)
+      success('Application submitted successfully!')
+    } catch (err) {
+      console.error('Application error:', err)
+      error(err.response?.data?.message || 'Failed to submit application')
+    } finally {
+      setApplying(false)
+    }
   }
 
   const handleShare = async () => {
@@ -267,10 +358,12 @@ export default function JobDetail() {
                         <Button 
                           size="lg" 
                           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                          onClick={handleApply}
-                          disabled={applied}
+                          onClick={applied ? undefined : () => setShowApplyModal(true)}
+                          disabled={applied || applying}
                         >
-                          {applied ? (
+                          {applying ? (
+                            'Applying...'
+                          ) : applied ? (
                             <>
                               <CheckCircle2 className="h-5 w-5 mr-2" />
                               Applied
@@ -278,6 +371,14 @@ export default function JobDetail() {
                           ) : (
                             'Apply Now'
                           )}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="lg"
+                          onClick={() => setShowApplyModal(true)}
+                          disabled={applied}
+                        >
+                          Apply with Cover Letter
                         </Button>
                         <Button 
                           variant="outline" 
@@ -480,18 +581,29 @@ export default function JobDetail() {
                   <Button 
                     className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                     size="lg"
-                    onClick={handleApply}
-                    disabled={applied}
+                    onClick={applied ? undefined : handleOneClickApply}
+                    disabled={applied || applying}
                   >
-                    {applied ? (
+                    {applying ? (
+                      'Applying...'
+                    ) : applied ? (
                       <>
                         <CheckCircle2 className="h-5 w-5 mr-2" />
                         Applied Successfully
                       </>
                     ) : (
-                      'Apply for this Job'
+                      'One-Click Apply'
                     )}
                   </Button>
+                  {!applied && (
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => setShowApplyModal(true)}
+                    >
+                      Apply with Cover Letter
+                    </Button>
+                  )}
                   <Button 
                     variant="outline" 
                     className="w-full"
@@ -556,6 +668,68 @@ export default function JobDetail() {
           </div>
         </div>
       </div>
+
+      {/* Apply Modal */}
+      {showApplyModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-background rounded-lg border-2 p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold">Apply for {job.title}</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowApplyModal(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold mb-2 block">Cover Letter (Optional)</label>
+                <Textarea
+                  value={coverLetter}
+                  onChange={(e) => setCoverLetter(e.target.value)}
+                  placeholder="Write a cover letter or generate one using AI..."
+                  rows={8}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={handleGenerateCoverLetter}
+                  disabled={generatingCoverLetter}
+                >
+                  {generatingCoverLetter ? 'Generating...' : '🤖 Generate with AI'}
+                </Button>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600"
+                  onClick={handleApplyWithCoverLetter}
+                  disabled={applying}
+                >
+                  {applying ? 'Submitting...' : 'Submit Application'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleOneClickApply}
+                  disabled={applying}
+                >
+                  Quick Apply (No Cover Letter)
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowApplyModal(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }

@@ -335,9 +335,9 @@ export default function Profile() {
                             <Edit className="h-4 w-4 mr-2" />
                             Edit Profile
                           </Button>
-                          <Button variant="outline" className="w-full">
-                            <Upload className="h-4 w-4 mr-2" />
-                            Upload Resume
+                          <Button variant="outline" className="w-full" onClick={() => navigate('/dashboard')}>
+                            <Briefcase className="h-4 w-4 mr-2" />
+                            View Dashboard
                           </Button>
                         </>
                       )}

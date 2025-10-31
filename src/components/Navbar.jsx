@@ -91,12 +91,22 @@ const Navbar = () => {
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <button 
-                  onClick={() => navigate('/profile')} 
+                  onClick={() => navigate('/dashboard')} 
                   className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors rounded-md hover:bg-accent"
                 >
-                  Dashboard
+                  My Dashboard
                 </button>
               </NavigationMenuItem>
+              {isLoggedIn && (
+                <NavigationMenuItem>
+                  <button 
+                    onClick={() => navigate('/employer')} 
+                    className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors rounded-md hover:bg-accent"
+                  >
+                    Employer
+                  </button>
+                </NavigationMenuItem>
+              )}
             </NavigationMenuList>
           </NavigationMenu>
 
@@ -185,7 +195,16 @@ const Navbar = () => {
                     </li>
                     <li>
                       <button
-                        onClick={() => { setProfileMenuOpen(false); navigate('/admin') }}
+                        onClick={() => { setProfileMenuOpen(false); navigate('/dashboard') }}
+                        className="w-full text-left px-4 py-2 hover:bg-accent text-foreground transition-colors"
+                        role="menuitem"
+                      >
+                        My Dashboard
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        onClick={() => { setProfileMenuOpen(false); navigate('/employer') }}
                         className="w-full text-left px-4 py-2 hover:bg-accent text-foreground transition-colors"
                         role="menuitem"
                       >

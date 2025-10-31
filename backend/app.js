@@ -10,6 +10,10 @@ import bcrypt from 'bcrypt'
 import CatalogRoutes from './routes/catalog.routes.js'
 import MetricsRoutes from './routes/metrics.routes.js'
 import JobRoutes from './routes/job.routes.js'
+import ApplicationRoutes from './routes/application.routes.js'
+import AIRoutes from './routes/ai.routes.js'
+import NotificationRoutes from './routes/notification.routes.js'
+import DashboardRoutes from './routes/dashboard.routes.js'
 import Job from './model/job.model.js'
 
 
@@ -23,6 +27,10 @@ app.use('/api/admin', AdminRoutes)
 app.use('/api/admin/catalog', CatalogRoutes)
 app.use('/api/admin/metrics', MetricsRoutes)
 app.use('/api/jobs', JobRoutes)
+app.use('/api/applications', ApplicationRoutes)
+app.use('/api/ai', AIRoutes)
+app.use('/api/notifications', NotificationRoutes)
+app.use('/api/dashboard', DashboardRoutes)
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static('uploads'))

@@ -22,9 +22,12 @@ ADMIN_EMAIL=admin@hirehub.com
 ADMIN_PASSWORD=admin123
 ADMIN_NAME=Admin User
 
-# OpenAI API Key (optional - for AI-powered resume parsing)
+# OpenAI API Key (optional - for AI-powered resume parsing, job recommendations, cover letter generation)
 # Get yours at: https://platform.openai.com/api-keys
 # OPENAI_API_KEY=your_openai_api_key_here
+
+# Email Service (optional - set to 'true' to enable email notifications)
+# EMAIL_SERVICE_ENABLED=false
 
 # CORS Configuration
 FRONTEND_URL=http://localhost:5173

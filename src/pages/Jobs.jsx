@@ -21,6 +21,7 @@ import { Badge } from '../components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Label } from '../components/ui/label'
 import Navbar from '../components/Navbar'
+import VoiceSearch from '../components/VoiceSearch'
 
 // Fallback/Mock data
 const mockJobs = [
@@ -305,8 +306,11 @@ export default function Jobs() {
                     placeholder="Job title, keywords, or company..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 h-12"
+                    className="pl-10 pr-10 h-12"
                   />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <VoiceSearch onSearch={(query) => setSearchTerm(query)} />
+                  </div>
                 </div>
                 <div className="flex-1 relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />

@@ -13,6 +13,9 @@ import AdminDashboard from './pages/admin/Dashboard'
 import AdminUsers from './pages/admin/Users'
 import AdminJobs from './pages/admin/Jobs'
 import JobForm from './pages/admin/JobForm'
+import JobSeekerDashboard from './pages/JobSeekerDashboard'
+import EmployerDashboard from './pages/EmployerDashboard'
+import InterviewPreparation from './pages/InterviewPreparation'
 import { hasAnyRole } from './utils/auth'
 import { AnimatePresence, motion } from 'framer-motion' // ✅ ADDED: Framer Motion for page transitions
 
@@ -148,6 +151,39 @@ const App = () => {
             exit="exit"
           >
             <Profile/>
+          </motion.div>
+        } />
+        
+        <Route path="/dashboard" element={
+          <motion.div
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <JobSeekerDashboard/>
+          </motion.div>
+        } />
+        
+        <Route path="/employer" element={
+          <motion.div
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <EmployerDashboard/>
+          </motion.div>
+        } />
+        
+        <Route path="/interview-prep" element={
+          <motion.div
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <InterviewPreparation/>
           </motion.div>
         } />
         
